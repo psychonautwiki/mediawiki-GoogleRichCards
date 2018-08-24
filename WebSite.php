@@ -18,73 +18,79 @@ use OutputPage;
 use Title;
 
 if (!defined('MEDIAWIKI')) {
-  echo("This is a Mediawiki extension and doesn't provide standalone functionality\n");
-  die(1);
+    echo("This is a Mediawiki extension and doesn't provide standalone functionality\n");
+    die(1);
 }
 
 class WebSite {
-  /**
-   * @var static Article instance to use for Singleton pattern
-   */
-  private static $instance;
+    /**
+     * @var static Article instance to use for Singleton pattern
+     */
+    private static $instance;
 
-  /**
-   * @var Title current instance of Title received from global $wgTitle
-   */
-  private $title;
+    /**
+     * @var Title current instance of Title received from global $wgTitle
+     */
+    private $title;
 
-  /**
-   * @var string Server URL received from global $wgServer
-   */
-  private $server;
+    /**
+     * @var string Server URL received from global $wgServer
+     */
+    private $server;
 
-  /**
-   * Singleon pattern getter
-   *
-   * @return WebSite
-   */
-  public static function getInstance() {
-    if(!isset(self::$instance)) {
-      self::$instance = new WebSite();
+    /**
+     * Singleon pattern getter
+     *
+     * @return WebSite
+     */
+    public static function getInstance() {
+        if(!isset(self::$instance)) {
+            self::$instance = new WebSite();
+        }
+
+        return self::$instance;
     }
 
-    return self::$instance;
-  }
+    /**
+     * Class constructor
+     */
+    public function __construct() {
+        global $wgLogo, $wgServer, $wgSitename, $wgTitle, $wgGRCSearchURLTemplate;
 
-  /**
-   * Class constructor
-   */
-  public function __construct() {
-    global $wgLogo, $wgServer, $wgSitename, $wgTitle;
-
-    $this->title = $wgTitle;
-    $this->server = $wgServer;
-  }
-
-  /**
-   * Render head item with metadata for Google Rich Snippet
-   *
-   * @param OutputPage OutputPage instance referencce
-   */
-  function render(OutputPage &$out) {
-    if($this->title instanceof Title && $this->title->isContentPage()) {
-      $website = array(
-        '@context'        => 'http://schema.org',
-        '@type'           => 'WebSite',
-        'url'             => $this->server,
-        'potentialAction' => array(
-          '@type'       => 'SearchAction',
-          'target'      => $this->server.'/index.php?search={search_term_string}',
-          'query-input' => 'required name=search_term_string',
-        )
-      );
-
-      $out->addHeadItem(
-        'GoogleRichCardsWebSite',
-        '<script type="application/ld+json">'.json_encode($website).'</script>'
-      );
+        $this->title = $wgTitle;
+        $this->server = $wgServer;
+        
+        if (isset($wgGRCSearchURLTemplate)) {
+            $this->searchURLTemplate = $wgGRCSearchURLTemplate;
+        } else {
+            $this->searchURLTemplate = $wgServer.'/index.php?search={search_term_string}';
+        }
     }
-  }
+
+    /**
+     * Render head item with metadata for Google Rich Snippet
+     *
+     * @param OutputPage OutputPage instance referencce
+     */
+    function render(OutputPage &$out) {
+        if($this->title instanceof Title && $this->title->isContentPage()) {
+            $website = array(
+                '@context'        => 'http://schema.org',
+                '@type'           => 'WebSite',
+                'url'             => $this->server,
+                'potentialAction' => array(
+                    '@type'       => 'SearchAction',
+                    'target'      => $this->searchURLTemplate,
+                    'query-input' => 'required name=search_term_string',
+                )
+            );
+
+            $out->addHeadItem(
+                'GoogleRichCardsWebSite',
+                '<script type="application/ld+json">'.json_encode($website).'</script>'
+            );
+        }
+    }
 }
 
 ?>
